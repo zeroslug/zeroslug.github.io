@@ -6,61 +6,64 @@ body {
     background-color: #f0f0f0;
     margin: 0;
     padding: 20px;
+    box-sizing: border-box; /* 确保 padding 不会增加总宽度 */
 }
 
 h1 {
     color: #333;
+    font-size: 2em;
+    text-align: center;
 }
 
 .game-container {
     display: flex;
-    gap: 40px;
+    flex-wrap: wrap; /* 允许换行 */
+    justify-content: center; /* 居中对齐 */
+    gap: 20px; /* 减小间距 */
     align-items: flex-start;
-    margin-top: 20px;
+    margin-top: 10px; /* 减小上边距 */
 }
 
-.puzzle-board {
-    width: 800px;
-    height: 800px;
+/* 拼图板和拼图块容器的响应式尺寸 */
+.puzzle-board,
+.puzzle-pieces {
+    width: 90vw; /* 在小屏幕上使用90%的视口宽度 */
+    max-width: 800px; /* 在大屏幕上保持最大宽度 */
+    aspect-ratio: 1 / 1; /* 保持正方形 */
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, 1fr);
     border: 3px solid #ccc;
     background-color: #e0e0e0;
-}
-
-.puzzle-piece-placeholder {
-    width: 200px;
-    height: 200px;
-    border: 1px solid #aaa;
     box-sizing: border-box;
 }
 
-.puzzle-pieces {
-    width: 800px;
-    height: 800px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    border: 3px solid #ccc;
-    background-color: #e0e0e0;
-}
-
+.puzzle-piece-placeholder,
 .puzzle-piece-container {
-    width: 200px;
-    height: 200px;
+    width: 100%;
+    height: 100%;
+    border: 1px solid #aaa;
+    box-sizing: border-box;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .puzzle-piece {
-    width: 198px;
-    height: 198px;
+    width: 95%; /* 稍微缩小以显示边框 */
+    height: 95%; /* 稍微缩小以显示边框 */
     border: 1px solid #fff;
     box-sizing: border-box;
     cursor: grab;
-    background-size: 800px 800px;
+    background-size: 400%; /* 4x4 网格的背景大小 */
+}
+
+/* 媒体查询：针对小屏幕设备 */
+@media (max-width: 900px) {
+    .game-container {
+        flex-direction: column; /* 垂直堆叠 */
+        align-items: center;
+    }
 }
 
 .dragging {
@@ -70,7 +73,7 @@ h1 {
 
 #status-message {
     margin-top: 20px;
-    font-size: 1.5em;
+    font-size: 1.2em; /* 减小字体大小 */
     font-weight: bold;
     text-align: center;
     color: #333;
@@ -87,7 +90,6 @@ h1 {
     z-index: 1000;
 }
 
-/* 新增烟花效果的CSS */
 .firework-trail {
     position: absolute;
     width: 10px;
