@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     const puzzleBoard = document.getElementById('puzzle-board');
     const puzzlePiecesContainer = document.getElementById('puzzle-pieces');
@@ -27,8 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDragPiece = null;
     let piecesData = [];
     const statusMessage = document.getElementById('status-message');
-
-    // 用于触摸和鼠标事件的变量
+    
+    let touchStartX = 0;
+    let touchStartY = 0;
     let originalParent = null;
 
     function initializeGame() {
@@ -78,46 +80,52 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.textContent = message;
         statusMessage.style.color = color;
     }
+    
+    // 获取所有放置目标，用于在 touchend 中计算
+    const dropTargets = document.querySelectorAll('.puzzle-piece-placeholder');
 
     // --- 鼠标和触摸事件处理的统一逻辑 ---
 
-    // 监听鼠标和触摸开始事件
     document.addEventListener('mousedown', startDrag);
-    document.addEventListener('touchstart', startDrag);
+    document.addEventListener('touchstart', startDrag, { passive: false });
 
     function startDrag(e) {
         const target = e.target.closest('.puzzle-piece');
-        if (target) {
-            e.preventDefault();
-            currentDragPiece = target;
-            originalParent = currentDragPiece.parentElement;
-            currentDragPiece.classList.add('dragging');
+        if (!target) return;
+        
+        e.preventDefault();
+        
+        currentDragPiece = target;
+        originalParent = currentDragPiece.parentElement;
 
-            // 复制一个节点用于拖动，这样不会影响原始布局
-            const clonedPiece = currentDragPiece.cloneNode(true);
-            clonedPiece.id = 'drag-clone';
-            clonedPiece.style.position = 'absolute';
-            clonedPiece.style.zIndex = '100';
-            document.body.appendChild(clonedPiece);
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
 
-            // 隐藏原始图块
-            currentDragPiece.style.visibility = 'hidden';
+        const clonedPiece = currentDragPiece.cloneNode(true);
+        clonedPiece.id = 'drag-clone';
+        clonedPiece.style.position = 'absolute';
+        clonedPiece.style.zIndex = '100';
+        clonedPiece.style.pointerEvents = 'none'; // 确保鼠标事件能穿透
+        document.body.appendChild(clonedPiece);
 
-            // 绑定移动和结束事件
-            document.addEventListener('mousemove', dragMove);
-            document.addEventListener('mouseup', endDrag);
-            document.addEventListener('touchmove', dragMove, { passive: false });
-            document.addEventListener('touchend', endDrag);
+        currentDragPiece.style.visibility = 'hidden';
 
-            const clientX = e.clientX || e.touches[0].clientX;
-            const clientY = e.clientY || e.touches[0].clientY;
-            updateClonePosition(clonedPiece, clientX, clientY);
-        }
+        const rect = currentDragPiece.getBoundingClientRect();
+        touchStartX = clientX - rect.left;
+        touchStartY = clientY - rect.top;
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('touchend', endDrag);
+
+        updateClonePosition(clonedPiece, clientX, clientY);
     }
 
     function dragMove(e) {
         if (!currentDragPiece) return;
         e.preventDefault();
+        
         const clientX = e.clientX || e.touches[0].clientX;
         const clientY = e.clientY || e.touches[0].clientY;
         const clonedPiece = document.getElementById('drag-clone');
@@ -125,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateClonePosition(clonedPiece, clientX, clientY);
 
         // 突出显示放置区
-        const targetPlaceholder = document.elementFromPoint(clientX, clientY)?.closest('.puzzle-piece-placeholder');
+        const targetPlaceholder = getDropTarget(clientX, clientY);
         document.querySelectorAll('.puzzle-piece-placeholder').forEach(p => p.style.outline = '');
         if (targetPlaceholder) {
             targetPlaceholder.style.outline = '2px solid #00f';
@@ -134,21 +142,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function endDrag(e) {
         if (!currentDragPiece) return;
-
+        
         const clientX = e.clientX || e.changedTouches[0].clientX;
         const clientY = e.clientY || e.changedTouches[0].clientY;
-        const targetPlaceholder = document.elementFromPoint(clientX, clientY)?.closest('.puzzle-piece-placeholder');
+
+        const targetPlaceholder = getDropTarget(clientX, clientY);
 
         handleDrop(targetPlaceholder);
 
-        // 清理事件监听器和临时元素
         document.removeEventListener('mousemove', dragMove);
         document.removeEventListener('mouseup', endDrag);
         document.removeEventListener('touchmove', dragMove);
         document.removeEventListener('touchend', endDrag);
         
         const clonedPiece = document.getElementById('drag-clone');
-        if(clonedPiece) clonedPiece.remove();
+        if (clonedPiece) clonedPiece.remove();
         
         currentDragPiece.classList.remove('dragging');
         currentDragPiece.style.visibility = 'visible';
@@ -156,34 +164,40 @@ document.addEventListener('DOMContentLoaded', () => {
         originalParent = null;
     }
 
-    function updateClonePosition(clone, x, y) {
-        const cloneRect = clone.getBoundingClientRect();
-        clone.style.left = `${x - cloneRect.width / 2}px`;
-        clone.style.top = `${y - cloneRect.height / 2}px`;
+    function updateClonePosition(clone, clientX, clientY) {
+        clone.style.left = `${clientX - touchStartX}px`;
+        clone.style.top = `${clientY - touchStartY}px`;
+    }
+
+    function getDropTarget(x, y) {
+        for (const target of dropTargets) {
+            const rect = target.getBoundingClientRect();
+            if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
+                return target;
+            }
+        }
+        return null;
     }
 
     function handleDrop(targetPlaceholder) {
-        if (currentDragPiece) {
-            if (targetPlaceholder) {
-                // 清除目标占位符的突出显示
-                targetPlaceholder.style.outline = '';
-                
-                // 如果目标占位符已有拼图块，交换位置
-                if (targetPlaceholder.children.length > 0) {
-                    const existingPiece = targetPlaceholder.children[0];
-                    originalParent.appendChild(existingPiece);
-                }
-                
-                targetPlaceholder.appendChild(currentDragPiece);
-            } else {
-                // 放回原位
-                originalParent.appendChild(currentDragPiece);
-            }
+        if (!currentDragPiece) return;
 
-            const piecesOnBoard = puzzleBoard.querySelectorAll('.puzzle-piece').length;
-            if (piecesOnBoard === totalPieces) {
-                setTimeout(checkWinCondition, 300);
+        if (targetPlaceholder) {
+            targetPlaceholder.style.outline = '';
+            
+            if (targetPlaceholder.children.length > 0) {
+                const existingPiece = targetPlaceholder.children[0];
+                originalParent.appendChild(existingPiece);
             }
+            
+            targetPlaceholder.appendChild(currentDragPiece);
+        } else {
+            originalParent.appendChild(currentDragPiece);
+        }
+
+        const piecesOnBoard = puzzleBoard.querySelectorAll('.puzzle-piece').length;
+        if (piecesOnBoard === totalPieces) {
+            setTimeout(checkWinCondition, 300);
         }
     }
 
@@ -279,3 +293,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
