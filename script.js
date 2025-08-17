@@ -1,14 +1,10 @@
-
 document.addEventListener('DOMContentLoaded', () => {
     const puzzleBoard = document.getElementById('puzzle-board');
     const puzzlePiecesContainer = document.getElementById('puzzle-pieces');
 
     // 您的5张图片路径数组
     const puzzleImages = [
-        'space0.png',
-        'space1.png',
-        'space2.png',
-        'space3.png'
+        'space0.png'
     ];
 
     // 用于爆炸效果的水果图片
@@ -101,11 +97,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientX = e.clientX || e.touches[0].clientX;
         const clientY = e.clientY || e.touches[0].clientY;
 
-        const clonedPiece = currentDragPiece.cloneNode(true);
+        const clonedPiece = document.createElement('div');
         clonedPiece.id = 'drag-clone';
+        clonedPiece.classList.add('puzzle-piece'); // 确保克隆元素有相同的样式
         clonedPiece.style.position = 'absolute';
         clonedPiece.style.zIndex = '100';
-        clonedPiece.style.pointerEvents = 'none'; // 确保鼠标事件能穿透
+        clonedPiece.style.pointerEvents = 'none';
+        
+        // 复制背景图片和位置样式
+        clonedPiece.style.backgroundImage = currentDragPiece.style.backgroundImage;
+        clonedPiece.style.backgroundPosition = currentDragPiece.style.backgroundPosition;
+        clonedPiece.style.backgroundSize = currentDragPiece.style.backgroundSize;
+
         document.body.appendChild(clonedPiece);
 
         currentDragPiece.style.visibility = 'hidden';
@@ -293,4 +296,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-
