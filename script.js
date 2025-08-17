@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
         puzzlePiecesContainer.innerHTML = '';
         piecesData = [];
 
-        // 随机选择一张拼图图片
         const randomIndex = Math.floor(Math.random() * puzzleImages.length);
         const selectedImage = puzzleImages[randomIndex];
 
@@ -77,10 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.style.color = color;
     }
     
-    // 获取所有放置目标，用于在 touchend 中计算
     const dropTargets = document.querySelectorAll('.puzzle-piece-placeholder');
-
-    // --- 鼠标和触摸事件处理的统一逻辑 ---
 
     document.addEventListener('mousedown', startDrag);
     document.addEventListener('touchstart', startDrag, { passive: false });
@@ -99,15 +95,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const clonedPiece = document.createElement('div');
         clonedPiece.id = 'drag-clone';
-        clonedPiece.classList.add('puzzle-piece'); // 确保克隆元素有相同的样式
+        clonedPiece.classList.add('puzzle-piece');
         clonedPiece.style.position = 'absolute';
         clonedPiece.style.zIndex = '100';
         clonedPiece.style.pointerEvents = 'none';
         
-        // 复制背景图片和位置样式
-        clonedPiece.style.backgroundImage = currentDragPiece.style.backgroundImage;
-        clonedPiece.style.backgroundPosition = currentDragPiece.style.backgroundPosition;
-        clonedPiece.style.backgroundSize = currentDragPiece.style.backgroundSize;
+        // 复制所有样式，包括尺寸和背景图
+        clonedPiece.style.cssText = window.getComputedStyle(currentDragPiece).cssText;
+        clonedPiece.style.width = currentDragPiece.offsetWidth + 'px';
+        clonedPiece.style.height = currentDragPiece.offsetHeight + 'px';
 
         document.body.appendChild(clonedPiece);
 
@@ -135,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateClonePosition(clonedPiece, clientX, clientY);
 
-        // 突出显示放置区
         const targetPlaceholder = getDropTarget(clientX, clientY);
         document.querySelectorAll('.puzzle-piece-placeholder').forEach(p => p.style.outline = '');
         if (targetPlaceholder) {
@@ -161,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const clonedPiece = document.getElementById('drag-clone');
         if (clonedPiece) clonedPiece.remove();
         
-        currentDragPiece.classList.remove('dragging');
         currentDragPiece.style.visibility = 'visible';
         currentDragPiece = null;
         originalParent = null;
