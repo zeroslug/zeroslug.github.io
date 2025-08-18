@@ -1,15 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     const puzzleBoard = document.getElementById('puzzle-board');
     const puzzlePiecesContainer = document.getElementById('puzzle-pieces');
-
+    
     // 您的5张图片路径数组
     const puzzleImages = [
+        //'v2-5c5c48c1da76d11f868709f7e28e9148_r.jpg',
         'bh0.jpg',
         'bh1.jpg',
         'bh2.jpg',
         'bh3.jpg'
     ];
-
+    
     // 用于爆炸效果的水果图片
     const fruitImages = [
         'https://i.ibb.co/6y4jGkY/cat-image.jpg',
@@ -27,36 +28,34 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDragPiece = null;
     let piecesData = [];
     const statusMessage = document.getElementById('status-message');
-    
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let originalParent = null;
 
     function initializeGame() {
         puzzleBoard.innerHTML = '';
         puzzlePiecesContainer.innerHTML = '';
         piecesData = [];
-
+        
+        // 随机选择一张拼图图片
         const randomIndex = Math.floor(Math.random() * puzzleImages.length);
         const selectedImage = puzzleImages[randomIndex];
-
+        
         for (let i = 0; i < totalPieces; i++) {
             const row = Math.floor(i / cols);
             const col = i % cols;
-
+            
             const piece = document.createElement('div');
             piece.classList.add('puzzle-piece');
+            piece.draggable = true;
             piece.dataset.index = i;
             piece.style.backgroundImage = `url(${selectedImage})`;
             piece.style.backgroundPosition = `-${col * pieceSize}px -${row * pieceSize}px`;
             piecesData.push(piece);
-
+    
             const placeholder = document.createElement('div');
             placeholder.classList.add('puzzle-piece-placeholder');
             placeholder.dataset.index = i;
             puzzleBoard.appendChild(placeholder);
         }
-
+        
         piecesData.sort(() => Math.random() - 0.5);
         piecesData.forEach(piece => {
             const pieceContainer = document.createElement('div');
@@ -71,136 +70,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         displayMessage('拖动图片到左侧拼图板');
     }
-
+    
     initializeGame();
 
     function displayMessage(message, color = '#333') {
         statusMessage.textContent = message;
         statusMessage.style.color = color;
     }
+
+    document.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('puzzle-piece')) {
+            currentDragPiece = e.target;
+            currentDragPiece.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+    });
+
+    document.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const target = e.target;
+        const placeholder = target.closest('.puzzle-piece-placeholder');
+        if (placeholder) {
+            placeholder.style.outline = '2px solid #00f';
+        }
+    });
+
+    document.addEventListener('dragleave', (e) => {
+        const target = e.target;
+        const placeholder = target.closest('.puzzle-piece-placeholder');
+        if (placeholder) {
+            placeholder.style.outline = '';
+        }
+    });
+
+    document.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const target = e.target;
+
+        if (currentDragPiece) {
+            const targetPlaceholder = target.closest('.puzzle-piece-placeholder');
+            const sourceContainer = currentDragPiece.parentElement;
+
+            if (targetPlaceholder) {
+                targetPlaceholder.style.outline = '';
+                
+                if (targetPlaceholder.children.length > 0) {
+                    const existingPiece = targetPlaceholder.children[0];
+                    sourceContainer.appendChild(existingPiece);
+                }
+                
+                targetPlaceholder.appendChild(currentDragPiece);
+
+            } else {
+                sourceContainer.appendChild(currentDragPiece);
+            }
+            
+            const piecesOnBoard = puzzleBoard.querySelectorAll('.puzzle-piece').length;
+            if (piecesOnBoard === totalPieces) {
+                setTimeout(checkWinCondition, 300);
+            }
+        }
+    });
+
+    document.addEventListener('dragend', () => {
+        if (currentDragPiece) {
+            currentDragPiece.classList.remove('dragging');
+            currentDragPiece = null;
+        }
+    });
     
-    const dropTargets = document.querySelectorAll('.puzzle-piece-placeholder');
-
-    document.addEventListener('mousedown', startDrag);
-    document.addEventListener('touchstart', startDrag, { passive: false });
-
-    function startDrag(e) {
-        const target = e.target.closest('.puzzle-piece');
-        if (!target) return;
-        
-        e.preventDefault();
-        
-        currentDragPiece = target;
-        originalParent = currentDragPiece.parentElement;
-
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
-
-        const clonedPiece = document.createElement('div');
-        clonedPiece.id = 'drag-clone';
-        clonedPiece.classList.add('puzzle-piece');
-        clonedPiece.style.position = 'absolute';
-        clonedPiece.style.zIndex = '100';
-        clonedPiece.style.pointerEvents = 'none';
-        
-        // 复制所有样式，包括尺寸和背景图
-        clonedPiece.style.cssText = window.getComputedStyle(currentDragPiece).cssText;
-        clonedPiece.style.width = currentDragPiece.offsetWidth + 'px';
-        clonedPiece.style.height = currentDragPiece.offsetHeight + 'px';
-
-        document.body.appendChild(clonedPiece);
-
-        currentDragPiece.style.visibility = 'hidden';
-
-        const rect = currentDragPiece.getBoundingClientRect();
-        touchStartX = clientX - rect.left;
-        touchStartY = clientY - rect.top;
-
-        document.addEventListener('mousemove', dragMove);
-        document.addEventListener('mouseup', endDrag);
-        document.addEventListener('touchmove', dragMove, { passive: false });
-        document.addEventListener('touchend', endDrag);
-
-        updateClonePosition(clonedPiece, clientX, clientY);
-    }
-
-    function dragMove(e) {
-        if (!currentDragPiece) return;
-        e.preventDefault();
-        
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
-        const clonedPiece = document.getElementById('drag-clone');
-
-        updateClonePosition(clonedPiece, clientX, clientY);
-
-        const targetPlaceholder = getDropTarget(clientX, clientY);
-        document.querySelectorAll('.puzzle-piece-placeholder').forEach(p => p.style.outline = '');
-        if (targetPlaceholder) {
-            targetPlaceholder.style.outline = '2px solid #00f';
-        }
-    }
-
-    function endDrag(e) {
-        if (!currentDragPiece) return;
-        
-        const clientX = e.clientX || e.changedTouches[0].clientX;
-        const clientY = e.clientY || e.changedTouches[0].clientY;
-
-        const targetPlaceholder = getDropTarget(clientX, clientY);
-
-        handleDrop(targetPlaceholder);
-
-        document.removeEventListener('mousemove', dragMove);
-        document.removeEventListener('mouseup', endDrag);
-        document.removeEventListener('touchmove', dragMove);
-        document.removeEventListener('touchend', endDrag);
-        
-        const clonedPiece = document.getElementById('drag-clone');
-        if (clonedPiece) clonedPiece.remove();
-        
-        currentDragPiece.style.visibility = 'visible';
-        currentDragPiece = null;
-        originalParent = null;
-    }
-
-    function updateClonePosition(clone, clientX, clientY) {
-        clone.style.left = `${clientX - touchStartX}px`;
-        clone.style.top = `${clientY - touchStartY}px`;
-    }
-
-    function getDropTarget(x, y) {
-        for (const target of dropTargets) {
-            const rect = target.getBoundingClientRect();
-            if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
-                return target;
-            }
-        }
-        return null;
-    }
-
-    function handleDrop(targetPlaceholder) {
-        if (!currentDragPiece) return;
-
-        if (targetPlaceholder) {
-            targetPlaceholder.style.outline = '';
-            
-            if (targetPlaceholder.children.length > 0) {
-                const existingPiece = targetPlaceholder.children[0];
-                originalParent.appendChild(existingPiece);
-            }
-            
-            targetPlaceholder.appendChild(currentDragPiece);
-        } else {
-            originalParent.appendChild(currentDragPiece);
-        }
-
-        const piecesOnBoard = puzzleBoard.querySelectorAll('.puzzle-piece').length;
-        if (piecesOnBoard === totalPieces) {
-            setTimeout(checkWinCondition, 300);
-        }
-    }
-
     function checkWinCondition() {
         let isWin = true;
         const placeholders = puzzleBoard.querySelectorAll('.puzzle-piece-placeholder');
@@ -293,4 +231,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-
