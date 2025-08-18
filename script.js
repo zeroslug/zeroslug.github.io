@@ -4,7 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 您的5张图片路径数组
     const puzzleImages = [
-        'space0.png'
+        'bh0.jpg',
+        'bh1.jpg',
+        'bh2.jpg',
+        'bh3.jpg'
     ];
 
     // 用于爆炸效果的水果图片
@@ -290,3 +293,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
